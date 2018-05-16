@@ -12,6 +12,7 @@ class PlayerCollider : ZilchComponent
     {
         if(event.OtherObject.Name == "Building")
         {
+            Console.WriteLine("Touching Building");
             this.LastTouchedBuilding = event.OtherObject.FindChildByName("BuildingCenter");
             this.Owner.Parent.PlayerController.NearBuilding = true;
             
@@ -24,6 +25,7 @@ class PlayerCollider : ZilchComponent
         
         if(event.OtherObject.Name == "Building")
         {
+            Console.WriteLine("Stopped Touching Building");
             this.LastTouchedBuilding = null;
             this.Owner.Parent.PlayerController.NearBuilding = false;
         }
@@ -33,12 +35,14 @@ class PlayerCollider : ZilchComponent
     {
         if(this.LastTouchedBuilding != null)
         {
+            
             var build = this.LastTouchedBuilding;
             var player = this.Owner.Parent;
             var distanceToBuilding = 0.0;
             
             distanceToBuilding = player.Transform.Translation.X -
                             build.Transform.WorldTranslation.X;
+            distanceToBuilding += build.BuildingDamage.BuildingOffset;
             this.Owner.Parent.PlayerController.DistanceFromClosestBuilding = distanceToBuilding;
         }
         

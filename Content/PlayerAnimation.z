@@ -14,12 +14,19 @@ class PlayerAnimation : ZilchComponent
     //Attack animation
     [Property]
     var ClassAttack : SpriteSource = null;
+    [Property]
+    var ClimbAttack : SpriteSource = null;
+    [Property]
+    var ClimbAnim : SpriteSource = null;
+    [Property]
+    var PunchNoise : SoundCue = null;
     
     var Controller:Gamepad = null;
 
     var AttackAnimationActive : Boolean = false;
     
     var CurrentScale : Real3;
+    
     
     function Initialize(init : CogInitializer)
     {
@@ -31,8 +38,9 @@ class PlayerAnimation : ZilchComponent
     {
         //Console.WriteLine(this.AttackAnimationActive);
         //Console.WriteLine(this.Owner.Sprite.SpriteSource.Name);
-        if(!this.AttackAnimationActive)
         
+        if(!this.AttackAnimationActive)
+        {
             
             //else if(this.Controller.LeftStick == Real2.Zero)/*Zero.Keyboard.KeyIsDown(Keys.A) == false && Zero.Keyboard.KeyIsDown(Keys.D) == false && Zero.Keyboard.KeyIsDown(Keys.W) == false && Zero.Keyboard.KeyIsDown(Keys.S) == false)*/
             
@@ -48,6 +56,8 @@ class PlayerAnimation : ZilchComponent
                 this.Owner.Sprite.FlipX = true;
 
             }
+            
+            
            
             
             else if(Zero.Keyboard.KeyIsDown(Keys.Space) )
@@ -55,14 +65,16 @@ class PlayerAnimation : ZilchComponent
                 this.Owner.Sprite.SpriteSource = this.ClassJump;
             }
             
-            else if(Zero.Keyboard.KeyIsDown(Keys.A) && this.Owner.Sprite.SpriteSource != this.ClassWalkAnimation && this.Owner.SweptController.Grounded)
+            else if(Zero.Keyboard.KeyIsDown(Keys.A) && this.Owner.Sprite.SpriteSource != this.ClassWalkAnimation
+            && this.Owner.PlayerController.NearBuilding != true)
             {
                 this.Owner.Sprite.AnimationActive = true;
                 this.Owner.Sprite.SpriteSource = this.ClassWalkAnimation;
                 this.Owner.Sprite.FlipX = false;
             }
              
-            else if(Zero.Keyboard.KeyIsDown(Keys.D) && this.Owner.Sprite.SpriteSource != this.ClassWalkAnimation && this.Owner.SweptController.Grounded)
+            else if(Zero.Keyboard.KeyIsDown(Keys.D) && this.Owner.Sprite.SpriteSource != this.ClassWalkAnimation 
+            && this.Owner.PlayerController.NearBuilding != true)
             {
                 this.Owner.Sprite.AnimationActive = true;
                 this.Owner.Sprite.SpriteSource = this.ClassWalkAnimation;
@@ -70,13 +82,14 @@ class PlayerAnimation : ZilchComponent
            
             }
             else if(Zero.Keyboard.KeyIsUp(Keys.A) && Zero.Keyboard.KeyIsUp(Keys.D) && Zero.Keyboard.KeyIsUp(Keys.Space) 
-                 && Zero.Keyboard.KeyIsUp(Keys.E) && this.Owner.Sprite.SpriteSource != this.Class)
+                 && Zero.Keyboard.KeyIsUp(Keys.E) && Zero.Keyboard.KeyIsUp(Keys.W) && Zero.Keyboard.KeyIsUp(Keys.S))
             {
-                if(this.Owner.SweptController.Grounded)
+                if(this.Owner.PlayerController.NearBuilding != true && this.Owner.Sprite.SpriteSource != this.Class)
                 {
                     this.Owner.Sprite.SpriteSource = this.Class;
                 }
-                else if(!this.Owner.SweptController.Grounded && this.Owner.Sprite.SpriteSource != this.ClassJump)
+                else if(this.Owner.PlayerController.NearBuilding
+                 && this.Owner.Sprite.SpriteSource != this.ClimbStill)
                 {
                     this.Owner.Sprite.SpriteSource = this.ClimbStill;
                 }
@@ -84,25 +97,50 @@ class PlayerAnimation : ZilchComponent
                 //this.Owner.Sprite.FlipX = false;
             }
             
+            else if(Zero.Keyboard.KeyIsDown(Keys.W) && this.Owner.PlayerController.NearBuilding
+             && this.Owner.Sprite.SpriteSource != this.ClimbAnim)
+            {
+                this.Owner.Sprite.SpriteSource = this.ClimbAnim;
+                if(this.Owner.Transform.Scale == this.CurrentScale)
+                {
+                    this.Owner.Transform.Scale = Real3(5.0, 6.0, 1.0);
+                    this.Owner.BoxCollider.Size = Real3(1.5, 1.3, 1.0);
+                }
+            }
+            
+            else if(Zero.Keyboard.KeyIsDown(Keys.S) && this.Owner.PlayerController.NearBuilding
+             && this.Owner.Sprite.SpriteSource != this.ClimbAnim)
+            {
+                this.Owner.Sprite.SpriteSource = this.ClimbAnim;
+                if(this.Owner.Transform.Scale == this.CurrentScale)
+                {
+                    this.Owner.Transform.Scale = Real3(5.0, 6.0, 1.0);
+                    this.Owner.BoxCollider.Size = Real3(1.5, 1.3, 1.0);
+                }
+            }
+            
             if(Zero.Keyboard.KeyIsDown(Keys.A) )//&& this.Owner.SweptController.Grounded)
             {
                 this.Owner.Sprite.FlipX = true;
             }
             
-            if(Zero.Keyboard.KeyIsDown(Keys.D) && !this.Owner.SweptController.Grounded)
+            if(Zero.Keyboard.KeyIsDown(Keys.D))
             {
                 this.Owner.Sprite.FlipX = false;
             }
-            else if(Zero.Keyboard.KeyIsPressed(Keys.E) && this.Owner.SweptController.Grounded && !this.AttackAnimationActive)
+            else if(Zero.Keyboard.KeyIsPressed(Keys.E) && !this.AttackAnimationActive && !this.Owner.PlayerController.NearBuilding)
             {
                 this.Owner.Sprite.SpriteSource = this.ClassAttack;
                 this.AttackAnimationActive = true;
             }
-            else if(Zero.Keyboard.KeyIsPressed(Keys.E) && this.Owner.Sprite.SpriteSource == SpriteSource.AlienClimbAnimation && !this.AttackAnimationActive)
+            else if(Zero.Keyboard.KeyIsPressed(Keys.E) && this.Owner.PlayerController.NearBuilding && !this.AttackAnimationActive)
             {
-                this.Owner.Sprite.SpriteSource = SpriteSource.Circle;
+                this.Space.SoundSpace.PlayCue(this.PunchNoise);
+                this.Owner.Sprite.SpriteSource = this.ClimbAttack;
+                this.Owner.PlayerController.CanIMove = false; 
                 this.AttackAnimationActive = true;
             }
+        }
         
         
         if(this.AttackAnimationActive && this.Owner.Sprite.SpriteSource == this.ClassAttack && this.Owner.Sprite.CurrentFrame == 3)
@@ -111,10 +149,17 @@ class PlayerAnimation : ZilchComponent
             this.Owner.Sprite.SpriteSource = this.Class;
         }
         
-        if(this.AttackAnimationActive && this.Owner.Sprite.SpriteSource == SpriteSource.Circle && this.Owner.Sprite.CurrentFrame == 0)
+        if(this.AttackAnimationActive && this.Owner.Sprite.SpriteSource == this.ClimbAttack && this.Owner.Sprite.CurrentFrame == 36)
+        {
+            
+        }
+        
+        if(this.AttackAnimationActive && this.Owner.Sprite.SpriteSource == this.ClimbAttack && this.Owner.Sprite.CurrentFrame == 59)
         {
             this.AttackAnimationActive = false;
-            this.Owner.Sprite.SpriteSource = SpriteSource.AlienClimbAnimation;
+            this.Owner.Transform.Scale = this.CurrentScale;
+            this.Owner.Sprite.SpriteSource = this.ClimbStill;
+            this.Owner.PlayerController.CanIMove = true;
         }
         
         if(this.Owner.Sprite.SpriteSource == this.ClassJump)
@@ -131,7 +176,8 @@ class PlayerAnimation : ZilchComponent
             }
         }
         
-        else if(this.Owner.Sprite.SpriteSource != this.ClassJump && this.Owner.Transform.Scale != this.CurrentScale)
+        else if(this.Owner.Sprite.SpriteSource != this.ClassJump && this.Owner.Sprite.SpriteSource != this.ClimbAnim
+         && this.Owner.Transform.Scale != this.CurrentScale)
         {
             this.Owner.Transform.Scale = this.CurrentScale;
             this.Owner.BoxCollider.Size = Real3(1.5, 1.5, 1.0);

@@ -1,0 +1,91 @@
+class BlockDestructionTest : ZilchComponent
+{
+    [Property]
+    var WithinRangeColor: Real4;
+    var OriginalColor: Real4;
+    
+    [Property]
+    var OneHitSprite : SpriteSource;
+    [Property]
+    var TwoHitSprite : SpriteSource;
+    
+    var HitsTaken : Real = 0;
+    
+    var PlayerIsWithinRange : Boolean = false;
+    
+    function Initialize(init : CogInitializer)
+    {
+        this.OriginalColor = this.Owner.Sprite.Color;
+        Zero.Connect(this.Space, Events.LogicUpdate, this.OnLogicUpdate);
+        Zero.Connect(this.Owner, Events.CollisionStarted, this.OnCollisionStarted);
+        Zero.Connect(this.Owner, Events.CollisionEnded, this.OnCollisionEnded);
+    }
+
+    function OnCollisionStarted(event : CollisionEvent)
+    {
+        //Console.WriteLine("Something Collided with me");
+        if(event.OtherObject.Name == "PlayerSwingRange")
+        {
+            this.Owner.Sprite.Color = this.WithinRangeColor;
+            this.PlayerIsWithinRange = true;
+        }
+    }
+
+    function OnCollisionEnded(event : CollisionEvent)
+    {
+        //Console.WriteLine("Something stopped Colliding with me");
+        if(event.OtherObject.Name == "PlayerSwingRange")
+        {
+            this.Owner.Sprite.Color = this.OriginalColor;
+            this.PlayerIsWithinRange = false;
+        }
+    }
+
+    function OnLogicUpdate(event : UpdateEvent)
+    {
+        if(this.PlayerIsWithinRange && Zero.Keyboard.KeyIsPressed(Keys.E) && 
+        this.HitsTaken < 3)
+        {
+            this.HitsTaken += 1;
+            if(this.HitsTaken == 1)
+            {
+                var my25 = this.Space.CreateAtPosition(Archetype.Find("Pluse25"), this.Owner.Transform.Translation);
+                if(this.Owner.Name.Contains("L"))
+                {
+                    my25.RigidBody.Velocity +=  Real3(-15.0, 0.0, 0.0);
+                }
+                
+                else if(this.Owner.Name.Contains("R"))
+                {
+                    my25.RigidBody.Velocity +=  Real3(15.0, 0.0, 0.0);
+                }
+                this.Space.FindObjectByName("Score").Score.Score += 25;
+                this.Owner.Sprite.SpriteSource = this.OneHitSprite;
+            }
+            else if(this.HitsTaken == 2)
+            {
+                var my50 = this.Space.CreateAtPosition(Archetype.Find("Plus50"), this.Owner.Transform.Translation);
+                if(this.Owner.Name.Contains("L"))
+                {
+                    my50.RigidBody.Velocity +=  Real3(-15.0, 0.0, 0.0);
+                }
+                
+                else if(this.Owner.Name.Contains("R"))
+                {
+                    my50.RigidBody.Velocity +=  Real3(15.0, 0.0, 0.0);
+                }
+                this.Space.FindObjectByName("Score").Score.Score += 50;
+                this.Owner.Sprite.SpriteSource = this.TwoHitSprite;
+            }
+        }
+        
+    }
+    
+    function BlockUpdate()
+    {
+        if(this.HitsTaken == 2)
+        {
+            this.Owner.Sprite.SpriteSource = this.TwoHitSprite;
+        }
+    }
+}

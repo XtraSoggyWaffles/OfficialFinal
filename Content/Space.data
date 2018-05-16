@@ -49,7 +49,7 @@ Space =
 	PersistantSound = 
 	{
 		string BackgroundMenuMusic = "5a49ad9fdb6a88ed:MenuMusicPlaceHolder",
-		string BackgroundGameMusic = "",
+		string BackgroundGameMusic = "5a4cc84109a3afd4:Silence",
 		string BackgroundIntroMusic = "",
 		string BackgroundHouseMusic = "",
 		string BackgroundMusicSpaceArch = "5a49d212c2272b7a:MusicSpace",

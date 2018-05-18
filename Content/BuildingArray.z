@@ -102,7 +102,7 @@ class BuildingArray : ZilchComponent
 
     function OnLogicUpdate(event : UpdateEvent)
     {
-        if(Zero.Keyboard.KeyIsPressed(Keys.E))
+        if(Zero.Keyboard.KeyIsPressed(Keys.E) || Zero.Keyboard.KeyIsPressed(Keys.O))
         {
             Utility.CheckBuildingStatus(this.BuildingArray);
         }

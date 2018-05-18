@@ -2,6 +2,8 @@ class PlayerController : ZilchComponent
 {
     var NearBuilding : Boolean = false;
     [Property]
+    var Controller : Integer = 1;
+    [Property]
     var MovementSpeed : Real;
     [Property]
     var JumpMultiplier : Real;
@@ -12,6 +14,11 @@ class PlayerController : ZilchComponent
     var DistanceFromClosestBuilding : Real = 0;
     var CanIMove : Boolean = true;
     
+    var KeyLeft : Keys;
+    var KeyRight : Keys;
+    var KeyUp : Keys;
+    var KeyDown : Keys;
+    var KeyAttack : Keys;
     
     function Initialize(init : CogInitializer)
     {
@@ -19,6 +26,31 @@ class PlayerController : ZilchComponent
         Zero.Connect(this.Owner, Events.CollisionStarted, this.OnCollisionStarted);
         Zero.Connect(this.Owner, Events.CollisionPersisted, this.OnCollisionPersisted);
         Zero.Connect(this.Owner, Events.CollisionEnded, this.OnCollisionEnded);
+        
+        this.DefineControls();
+        
+    }
+    
+    
+    function DefineControls()
+    {
+        if(this.Controller == 1)
+        {
+            Console.WriteLine("Using controller : `this.Controller`");
+            this.KeyLeft = Keys.A;
+            this.KeyRight = Keys.D;
+            this.KeyUp = Keys.W;
+            this.KeyDown = Keys.S;
+            this.KeyAttack = Keys.E;
+        }
+        else if(this.Controller == 2)
+        {
+            this.KeyLeft = Keys.J;
+            this.KeyRight = Keys.L;
+            this.KeyUp = Keys.I;
+            this.KeyDown = Keys.K;
+            this.KeyAttack = Keys.O;
+        }
     }
 
     function OnCollisionPersisted(event : CollisionEvent)
@@ -71,6 +103,7 @@ class PlayerController : ZilchComponent
 
    function OnLogicUpdate(event : UpdateEvent)
 {
+    //Console.WriteLine(this.KeyRight);
 
     if(this.DisplayBuildingDistance)
     {
@@ -81,7 +114,7 @@ class PlayerController : ZilchComponent
   if(this.CanIMove)
   {
       // control left, right, and up
-      if(Zero.Keyboard.KeyIsDown(Keys.A))
+      if(Zero.Keyboard.KeyIsDown(this.KeyLeft))
       {
           //Console.WriteLine(this.NearBuilding, this.DistanceFromClosestBuilding);
         if(this.NearBuilding && this.DistanceFromClosestBuilding < 1)
@@ -98,18 +131,20 @@ class PlayerController : ZilchComponent
               this.Owner.Transform.Translation -= Real3(10,0,0) * this.MovementSpeed * event.Dt;
           }
           
-          if(Zero.Keyboard.KeyIsDown(Keys.W))
+          if(Zero.Keyboard.KeyIsDown(this.KeyUp))
           {
               this.Owner.Transform.Translation += Real3(0,5,0) * event.Dt;
           }
-          else if(Zero.Keyboard.KeyIsDown(Keys.S))
+          else if(Zero.Keyboard.KeyIsDown(this.KeyDown))
           {
               this.Owner.Transform.Translation -= Real3(0,5,0) * event.Dt;
           }
       }
 
-      if(Zero.Keyboard.KeyIsDown(Keys.D))
+      if(Zero.Keyboard.KeyIsDown(this.KeyRight))
       {
+          //Console.WriteLine(this.Owner.BoxCollider.Size);
+                    //Console.WriteLine("PRESSINGRIGHT");
           if(this.NearBuilding && this.DistanceFromClosestBuilding < 1)
           {
               //this.Owner.SweptController.Gravity = 0;
@@ -125,18 +160,18 @@ class PlayerController : ZilchComponent
               this.Owner.Transform.Translation -= Real3(-10,0,0) * this.MovementSpeed * event.Dt;
           }
           
-          if(Zero.Keyboard.KeyIsDown(Keys.W))
+          if(Zero.Keyboard.KeyIsDown(this.KeyUp))
           {
               this.Owner.Transform.Translation += Real3(0,5,0) * event.Dt;
           }
-          else if(Zero.Keyboard.KeyIsDown(Keys.S))
+          else if(Zero.Keyboard.KeyIsDown(this.KeyDown))
           {
               this.Owner.Transform.Translation -= Real3(0,5,0) * event.Dt;
           }
         
       }
       
-      if(Zero.Keyboard.KeyIsDown(Keys.W))
+      if(Zero.Keyboard.KeyIsDown(this.KeyUp))
       {
           if(this.NearBuilding)
           {
@@ -144,7 +179,7 @@ class PlayerController : ZilchComponent
           }
       }
       
-      if(Zero.Keyboard.KeyIsDown(Keys.S))
+      if(Zero.Keyboard.KeyIsDown(this.KeyDown))
       {
           if(this.NearBuilding)
           {

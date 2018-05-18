@@ -10,6 +10,7 @@ class BlockDestructionTest : ZilchComponent
     var TwoHitSprite : SpriteSource;
     
     var HitsTaken : Real = 0;
+    var PlayerHitKey : Keys;
     
     var PlayerIsWithinRange : Boolean = false;
     
@@ -28,6 +29,7 @@ class BlockDestructionTest : ZilchComponent
         {
             this.Owner.Sprite.Color = this.WithinRangeColor;
             this.PlayerIsWithinRange = true;
+            this.PlayerHitKey = event.OtherObject.Parent.PlayerController.KeyAttack;
         }
     }
 
@@ -38,12 +40,13 @@ class BlockDestructionTest : ZilchComponent
         {
             this.Owner.Sprite.Color = this.OriginalColor;
             this.PlayerIsWithinRange = false;
+            this.PlayerHitKey = Keys.NumPad0;
         }
     }
 
     function OnLogicUpdate(event : UpdateEvent)
     {
-        if(this.PlayerIsWithinRange && Zero.Keyboard.KeyIsPressed(Keys.E) && 
+        if(this.PlayerIsWithinRange && Zero.Keyboard.KeyIsPressed(this.PlayerHitKey) && 
         this.HitsTaken < 3)
         {
             this.HitsTaken += 1;

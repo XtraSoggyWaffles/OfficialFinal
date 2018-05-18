@@ -9,7 +9,7 @@ class ScoreFadeAndOut : ZilchComponent
     {
         //Zero.Connect(this.Space, Events.LogicUpdate, this.OnLogicUpdate);
         this.Color = this.Owner.SpriteText.Color;
-        Console.WriteLine(this.Owner.SpriteText.Color);
+        //Console.WriteLine(this.Owner.SpriteText.Color);
         this.FadeIn();
     }
 
@@ -19,7 +19,7 @@ class ScoreFadeAndOut : ZilchComponent
     
     function FadeIn()
     {
-        Console.WriteLine("Start fade");
+        //Console.WriteLine("Start fade");
         var seq = Actions.Sequence(this.Owner.Actions);
         var specProp = @this.Owner.Sprite.Color;
         var specTime = 1.0;
@@ -38,6 +38,6 @@ class ScoreFadeAndOut : ZilchComponent
         var specEase = Ease.QuadInOut;
         Action.Property(this.Owner.Actions, @this.SpriteText.Color
                         , Real4(this.Color.X, this.Color.Y, this.Color.Z, 0.0), 1.0, Ease.QuadInOut);
-        Console.WriteLine("End Fade");
+        //Console.WriteLine("End Fade");
     }
 }

@@ -12,7 +12,7 @@ class PlayerCollider : ZilchComponent
     {
         if(event.OtherObject.Name == "Building")
         {
-            Console.WriteLine("Touching Building");
+            //Console.WriteLine("Touching Building");
             this.LastTouchedBuilding = event.OtherObject.FindChildByName("BuildingCenter");
             this.Owner.Parent.PlayerController.NearBuilding = true;
             
@@ -25,7 +25,7 @@ class PlayerCollider : ZilchComponent
         
         if(event.OtherObject.Name == "Building")
         {
-            Console.WriteLine("Stopped Touching Building");
+            //Console.WriteLine("Stopped Touching Building");
             this.LastTouchedBuilding = null;
             this.Owner.Parent.PlayerController.NearBuilding = false;
         }

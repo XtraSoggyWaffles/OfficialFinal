@@ -1,0 +1,38 @@
+class RandomGeneration : ZilchComponent
+{
+    
+    var Building1 : Archetype = null;
+    var Building2 : Archetype = null;
+    var Building3 : Archetype = null;
+    var Building4 : Archetype = null;
+    var Building5 : Archetype = null;
+    var Building6 : Archetype = null;
+    var Building7 : Archetype = null;
+    var Building8 : Archetype = null;
+    var Building9 : Archetype = null;
+    var Building10 : Archetype = null;
+    
+    var RandomGenerator : Random = Random();
+    
+    
+    
+    function Initialize(init : CogInitializer)
+    {
+        //Zero.Connect(this.Space, Events.LogicUpdate, this.OnLogicUpdate);
+    }
+
+    function OnLogicUpdate(event : UpdateEvent)
+    {
+         
+    }
+    function RandomBuildingGeneration()
+    {
+        var random = this.RandomGenerator.DieRoll(10);
+        Console.WriteLine(random);
+        if(random == 1)
+        {
+             
+        }
+        
+    }
+}

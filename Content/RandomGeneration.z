@@ -31,7 +31,7 @@ class RandomGeneration : ZilchComponent
         Console.WriteLine(random);
         if(random == 1)
         {
-             
+            
         }
         
     }

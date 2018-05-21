@@ -19,18 +19,26 @@ class PlayerAnimation : ZilchComponent
     [Property]
     var ClimbAnim : SpriteSource = null;
     [Property]
+    var StunnedAnim : SpriteSource = null;
+    [Property]
     var PunchNoise : SoundCue = null;
+    
     
 
     var AttackAnimationActive : Boolean = false;
     
     var CurrentScale : Real3;
+    var CurrentCollide : Real3;
+    var CurrentTrans : Real3;
     
     var KeyLeft : Keys;
     var KeyRight : Keys;
     var KeyUp : Keys;
     var KeyDown : Keys;
     var KeyAttack : Keys;
+    var KeyStun : Keys;
+    
+    var Stunned : Boolean;
     
     var Controller : Integer;
     
@@ -38,14 +46,34 @@ class PlayerAnimation : ZilchComponent
     function Initialize(init : CogInitializer)
     {
         this.CurrentScale = this.Owner.Transform.Scale;
-        Zero.Connect(this.Space, Events.LogicUpdate, this.OnLogicUpdate);
+        this.CurrentCollide = this.Owner.BoxCollider.Size;
         this.KeyLeft = this.Owner.PlayerController.KeyLeft;
         this.KeyRight = this.Owner.PlayerController.KeyRight;
         this.KeyUp = this.Owner.PlayerController.KeyUp;
         this.KeyDown = this.Owner.PlayerController.KeyDown;
         this.KeyAttack = this.Owner.PlayerController.KeyAttack;
+        this.KeyStun = this.Owner.PlayerController.KeyStun;
         this.Controller = this.Owner.PlayerController.Controller;
+        
+        Zero.Connect(this.Space, Events.LogicUpdate, this.OnLogicUpdate);
+        Zero.Connect(this.Owner, Events.Stun, this.OnStun);
         //Console.WriteLine(this.KeyAttack);
+    }
+
+    function OnStun(event : ZilchEvent)
+    {
+        this.Stunned = true;
+        var seq = Action.Sequence(this.Owner.Actions);
+        Action.Delay(seq, 3.0);
+        Action.Call(seq, this.UnStun);
+    }
+    
+    function UnStun()
+    {
+        this.Stunned = false;
+        this.Owner.Sprite.SpriteSource = this.Class;
+        this.Owner.Transform.Scale = this.CurrentScale;
+        this.Owner.BoxCollider.Size = this.CurrentCollide;
     }
 
     function OnLogicUpdate(event : UpdateEvent)
@@ -53,20 +81,20 @@ class PlayerAnimation : ZilchComponent
         //Console.WriteLine(this.AttackAnimationActive);
         //Console.WriteLine(this.Owner.Sprite.SpriteSource.Name);
         
-        if(!this.AttackAnimationActive)
+        if(!this.AttackAnimationActive && this.Stunned == false)
         {
             
             //else if(this.Controller.LeftStick == Real2.Zero)/*Zero.Keyboard.KeyIsDown(this.KeyLeft) == false && Zero.Keyboard.KeyIsDown(this.KeyRight) == false && Zero.Keyboard.KeyIsDown(this.KeyUp) == false && Zero.Keyboard.KeyIsDown(this.KeyDown) == false)*/
             
             if(Zero.Keyboard.KeyIsDown(this.KeyRight) && Zero.Keyboard.KeyIsDown(Keys.Space))
             {
-                this.Owner.Sprite.SpriteSource = this.ClassJump;
+                //this.Owner.Sprite.SpriteSource = this.ClassJump;
                 
             }
             
             else if(Zero.Keyboard.KeyIsDown(this.KeyLeft) && Zero.Keyboard.KeyIsDown(Keys.Space))
             {
-                this.Owner.Sprite.SpriteSource = this.ClassJump;
+                //this.Owner.Sprite.SpriteSource = this.ClassJump;
                 this.Owner.Sprite.FlipX = true;
 
             }
@@ -76,7 +104,7 @@ class PlayerAnimation : ZilchComponent
             
             else if(Zero.Keyboard.KeyIsDown(Keys.Space) )
             {
-                this.Owner.Sprite.SpriteSource = this.ClassJump;
+                //this.Owner.Sprite.SpriteSource = this.ClassJump;
             }
             
             else if(Zero.Keyboard.KeyIsDown(this.KeyLeft) && this.Owner.Sprite.SpriteSource != this.ClassWalkAnimation
@@ -151,10 +179,15 @@ class PlayerAnimation : ZilchComponent
             if(Zero.Keyboard.KeyIsDown(this.KeyLeft) )//&& this.Owner.SweptController.Grounded)
             {
                 this.Owner.Sprite.FlipX = true;
+                if(this.Owner.Transform.Scale != this.CurrentScale && this.Controller == 1
+                && this.Owner.PlayerController.NearBuilding == false)
+                {
+                    this.Owner.Transform.Scale = this.CurrentScale;
+                }
                 if(this.Owner.Transform.Scale == this.CurrentScale && this.Controller == 2)
                 {
                     this.Owner.Transform.Scale = Real3(6.0, this.CurrentScale.Y, 1.0);
-                    this.Owner.BoxCollider.Size = Real3(1.0, 2.2, 1.0);
+                    this.Owner.BoxCollider.Size = Real3(1.0, 2.0, 1.0);
                 }
             }
             
@@ -163,42 +196,91 @@ class PlayerAnimation : ZilchComponent
             if(Zero.Keyboard.KeyIsDown(this.KeyRight))
             {
                 this.Owner.Sprite.FlipX = false;
+                if(this.Owner.Transform.Scale != this.CurrentScale && this.Controller == 1
+                && this.Owner.PlayerController.NearBuilding == false)
+                {
+                    this.Owner.Transform.Scale = this.CurrentScale;
+                }
                 if(this.Owner.Transform.Scale == this.CurrentScale && this.Controller == 2)
                 {
                     this.Owner.Transform.Scale = Real3(6.0, this.CurrentScale.Y, 1.0);
-                    this.Owner.BoxCollider.Size = Real3(1.0, 2.2, 1.0);
+                    this.Owner.BoxCollider.Size = Real3(1.0, 2.0, 1.0);
                 }
             }
-            else if(Zero.Keyboard.KeyIsPressed(this.KeyAttack) && !this.AttackAnimationActive && !this.Owner.PlayerController.NearBuilding)
+            //=====================================
+            //STUN ON GROUND
+            //=====================================
+            if(Zero.Keyboard.KeyIsPressed(this.KeyStun) && !this.AttackAnimationActive && !this.Owner.PlayerController.NearBuilding)
             {
                 this.Owner.Sprite.SpriteSource = this.ClassAttack;
+                this.CurrentTrans = this.Owner.Transform.Translation;
+                if(this.Owner.PlayerController.Controller == 1)
+                {
+                    this.Owner.Transform.Scale = Real3(6.0, this.CurrentScale.Y + 1.0, 1.0);
+                    this.Owner.BoxCollider.Size = Real3(1.0, this.CurrentCollide.Y -0.18, 1.0);
+                }
+                else if(this.Owner.PlayerController.Controller == 2)
+                {
+                    if(this.Owner.Sprite.FlipX)
+                    {
+                        this.Owner.Transform.Translation -= Real3(2.0, 0.0, 0.0);
+                    }
+                    else if(!this.Owner.Sprite.FlipX)
+                    {
+                        this.Owner.Transform.Translation += Real3(2.0, 0.0, 0.0);
+                    }
+                    this.Owner.Transform.Scale = Real3(10.0, this.CurrentScale.Y + 1.2, 1.0);
+                    this.Owner.BoxCollider.Size = Real3(0.9, 1.6, 1.0);
+                }
                 this.AttackAnimationActive = true;
+                this.Owner.PlayerController.CanIMove = false;
             }
+            
+            //=====================================
+            //ATTACK ON BUILDING 
+            //=====================================
             else if(Zero.Keyboard.KeyIsPressed(this.KeyAttack) && this.Owner.PlayerController.NearBuilding && !this.AttackAnimationActive)
             {
                 this.Space.SoundSpace.PlayCue(this.PunchNoise);
                 this.Owner.Sprite.SpriteSource = this.ClimbAttack;
                 this.Owner.PlayerController.CanIMove = false; 
                 this.AttackAnimationActive = true;
-                
-                this.Owner.Transform.Scale = Real3(9.0, this.CurrentScale.Y + 1, 1.0);
-                this.Owner.BoxCollider.Size = Real3(1.0, 2.2, 1.0);
+                if(this.Owner.PlayerController.Controller == 2)
+                {
+                    this.Owner.Transform.Scale = Real3(9.0, this.CurrentScale.Y + 1, 1.0);
+                    this.Owner.BoxCollider.Size = Real3(1.0, 2.0, 1.0);
+                }
             }
         }
         
         
-        if(this.AttackAnimationActive && this.Owner.Sprite.SpriteSource == this.ClassAttack && this.Owner.Sprite.CurrentFrame == 3)
+        if(this.AttackAnimationActive && this.Owner.Sprite.SpriteSource == this.ClassAttack && this.Owner.Sprite.CurrentFrame == 59 && this.Stunned != true)
         {
             this.AttackAnimationActive = false;
             this.Owner.Sprite.SpriteSource = this.Class;
+            this.Owner.PlayerController.CanIMove = true;
+            this.Owner.BoxCollider.Size = this.CurrentCollide;
+            this.Owner.Transform.Scale = this.CurrentScale;
+            if(this.Controller == 2)
+            {
+                
+                if(this.Owner.Sprite.FlipX)
+                    {
+                        this.Owner.Transform.Translation += Real3(2.0, 0.0, 0.0);
+                    }
+                    else if(!this.Owner.Sprite.FlipX)
+                    {
+                        this.Owner.Transform.Translation -= Real3(2.0, 0.0, 0.0);
+                    }
+            }
         }
         
-        if(this.AttackAnimationActive && this.Owner.Sprite.SpriteSource == this.ClimbAttack && this.Owner.Sprite.CurrentFrame == 36)
+        if(this.AttackAnimationActive && this.Owner.Sprite.SpriteSource == this.ClimbAttack && this.Owner.Sprite.CurrentFrame == 36 && this.Stunned != true)
         {
             
         }
         
-        if(this.AttackAnimationActive && this.Owner.Sprite.SpriteSource == this.ClimbAttack && this.Owner.Sprite.CurrentFrame == 59)
+        if(this.AttackAnimationActive && this.Owner.Sprite.SpriteSource == this.ClimbAttack && this.Owner.Sprite.CurrentFrame == 59 && this.Stunned != true)
         {
             this.AttackAnimationActive = false;
             this.Owner.Transform.Scale = this.CurrentScale;
@@ -211,7 +293,7 @@ class PlayerAnimation : ZilchComponent
             }
         }
         
-        if(this.Owner.Sprite.SpriteSource == this.ClassJump)
+        if(this.Owner.Sprite.SpriteSource == this.ClassJump && this.Stunned != true)
         {
             if(this.Owner.Sprite.CurrentFrame > 12)
             {
@@ -226,7 +308,8 @@ class PlayerAnimation : ZilchComponent
         }
         
         else if(this.Owner.Sprite.SpriteSource != this.ClassJump && this.Owner.Sprite.SpriteSource != this.ClimbAnim
-         && this.Owner.Transform.Scale != this.CurrentScale && Zero.Keyboard.KeyIsUp(this.KeyRight) && Zero.Keyboard.KeyIsUp(this.KeyLeft))
+         && this.Owner.Transform.Scale != this.CurrentScale && Zero.Keyboard.KeyIsUp(this.KeyRight) && Zero.Keyboard.KeyIsUp(this.KeyLeft)
+         && this.Owner.Sprite.SpriteSource != this.ClassAttack && this.Stunned != true)
         {
             if(this.Controller == 1)
             {
@@ -239,9 +322,19 @@ class PlayerAnimation : ZilchComponent
                 this.Owner.Sprite.SpriteSource != this.ClimbAttack)
                 {
                     this.Owner.Transform.Scale = this.CurrentScale;
-                    this.Owner.BoxCollider.Size = Real3(1.5, 2.2, 1.0);
+                    this.Owner.BoxCollider.Size = Real3(1.5, 2.0, 1.0);
                 }
                 
+            }
+        }
+        
+        if(this.Stunned && this.Owner.Sprite.SpriteSource != this.StunnedAnim)
+        {
+            this.Owner.Sprite.SpriteSource = this.StunnedAnim;
+            if(this.Owner.PlayerController.Controller == 2)
+            {
+                this.Owner.Transform.Scale = Real3(7.0, this.CurrentScale.Y + 1, 1.0);
+                this.Owner.BoxCollider.Size = Real3(1.0, 1.9, 1.0);
             }
         }
         

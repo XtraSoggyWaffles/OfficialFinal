@@ -24,7 +24,10 @@ class Utility
     {
         foreach(var member in arr)
         {
-            member.Destroy();
+            if(member != null)
+            {
+                member.Destroy();
+            }
         }
     }
     
@@ -56,7 +59,7 @@ class Utility
         var integrity = 100.0;
         integrity -= (damagedMembers / totalMembers)*100.0;
         integrity = Math.Round(integrity, 0);
-        Console.WriteLine("Building Integrity : `integrity`%");
+        //Console.WriteLine("Building Integrity : `integrity`%");
         if(integrity < 50)
         {
             foreach(var member in arr)
@@ -78,6 +81,8 @@ class BuildingArray : ZilchComponent
     var BuildingArray : Array[Cog];
     [Property]
     var DestroyRate : Real = 0.5;
+    [Property]
+    var DestroyAllChildren : Boolean = true;
     var CurrentFloor : Integer = 1;
     var Sent : Real = 0;
     var ImFalling : Boolean = false;
@@ -139,6 +144,9 @@ class BuildingArray : ZilchComponent
                     Console.WriteLine("PARTICLE CREATED");
                     var newtransform = Real3(sec.Transform.Translation.X + 2.0, sec.Transform.Translation.Y - 3.0, 1.0);
                     this.Space.CreateAtPosition(Archetype.Find("FellingParticle"), newtransform);
+                    newtransform = Real3(sec.Transform.Translation.X + 2.0, sec.Transform.Translation.Y + 1.5, 0.0);
+                    this.Space.CreateAtPosition(Archetype.Find("Rubble"), newtransform);
+                    
                     this.Sent += 1;
                 }
                 
@@ -152,7 +160,7 @@ class BuildingArray : ZilchComponent
             {
                 sec.Transform.Translation -= Real3(0.0, 5.0, 0.0);
             }
-        }
+         }
         this.CurrentFloor += 1;
         if(this.CurrentFloor == 9)
         {
@@ -167,6 +175,10 @@ class BuildingArray : ZilchComponent
     
     function StopParticles()
     {
+        if(this.Owner.FindChildByName("BuildingTop") != null)
+        {
+            this.Owner.FindChildByName("BuildingTop").Destroy();
+        }
         if(this.Space.FindObjectByName("FP") != null)
             {
                 this.Space.FindObjectByName("FP").BoxParticleEmitter.Active = false;
@@ -182,6 +194,10 @@ class BuildingArray : ZilchComponent
         {
             this.Space.FindObjectByName("FP").Destroy();
             this.Owner.Destroy();
+            if(this.DestroyAllChildren)
+            {
+                Utility.DestoryChildren(this.BuildingArray);
+            }
         }
     }
     

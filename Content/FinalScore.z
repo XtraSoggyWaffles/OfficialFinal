@@ -1,5 +1,6 @@
 class FinalScore : ZilchComponent
 {
+    
     var DataCog : Cog = null;
     var Controller : Gamepad = null;
     [Property]
@@ -12,6 +13,10 @@ class FinalScore : ZilchComponent
     var NewHighScore : CogPath = null;
     [Property]
     var NameEntry : CogPath = null;
+    [Property]
+    var Player : Integer = 0;
+    
+    var FinalScore : Real;
     
     var AsciiVal : Integer = 65;
     var Name : String = "";
@@ -19,15 +24,30 @@ class FinalScore : ZilchComponent
     
     function Initialize(init : CogInitializer)
     {
+        
         this.Controller = Zero.Gamepads.GetGamePad(0);
         this.DataCog = Zero.ObjectStore.RestoreOrArchetype("Data", Archetype.Data, this.Space);
-        this.ScoreText.Cog.SpriteText.Text = "Score: `this.DataCog.DataSaver.Score`";
-        this.TimeText.Cog.SpriteText.Text = "Time Remaining: `this.DataCog.DataSaver.Time`";
-        var finalScore = this.DataCog.DataSaver.Score + this.DataCog.DataSaver.Time;
-        this.Owner.SpriteText.Text = "Final Score: `finalScore`";
-        if(finalScore > this.DataCog.DataSaver.HighScore)
+        if(this.Player == 1)
         {
-            this.DataCog.DataSaver.HighScore = finalScore;
+            this.ScoreText.Cog.SpriteText.Text = "Score: `this.DataCog.DataSaver.PlayerOneScore`";
+        }
+        else if(this.Player == 2)
+        {
+            this.ScoreText.Cog.SpriteText.Text = "Score: `this.DataCog.DataSaver.PlayerTwoScore`";
+        }
+        this.TimeText.Cog.SpriteText.Text = "Time Remaining: `this.DataCog.DataSaver.Time`";
+        if(this.Player == 1)
+        {
+            this.FinalScore = this.DataCog.DataSaver.PlayerOneScore + this.DataCog.DataSaver.Time;
+        }
+        else if(this.Player == 2)
+        {
+            this.FinalScore = this.DataCog.DataSaver.PlayerTwoScore + this.DataCog.DataSaver.Time;
+        }
+        this.Owner.SpriteText.Text = "Final Score: `this.FinalScore`";
+        if(this.FinalScore > this.DataCog.DataSaver.HighScore)
+        {
+            this.DataCog.DataSaver.HighScore = this.FinalScore;
             this.NewHighScore.Cog.SpriteText.Visible = true;
             this.NameEntered = false;
             this.NameEntry.Cog.SpriteText.Visible = true;
@@ -113,5 +133,4 @@ class FinalScore : ZilchComponent
             this.AsciiVal = 90;
         }
     }
-
 }

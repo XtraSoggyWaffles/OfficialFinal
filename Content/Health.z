@@ -28,12 +28,17 @@ class Health : ZilchComponent
     [Property]
     var DamageScalar : Real = 1.0;
     
+    [Property]
+    var HealthMeter : CogPath;
+    var Meter : Cog;
+    
     // When we die, we sound out a death event.
     sends Death : ZilchEvent;
     
     function Initialize(init : CogInitializer)
     {
         this.CurrentHealth = this.MaxHealth;
+        this.Meter = this.HealthMeter.Cog;
         Zero.Connect(this.Owner, Events.ApplyDamage, this.OnApplyDamage);
     }
     
@@ -69,5 +74,14 @@ class Health : ZilchComponent
                 }
             }
         }
+        
+        this.UpdateMeter();
+    }
+    
+    function UpdateMeter()
+    {
+        var meterUpdate = MeterUpdate();
+        meterUpdate.Val = this.CurrentHealth;
+        this.Meter.DispatchEvent(Events.MeterUpdate, meterUpdate);
     }
 }

@@ -6,19 +6,29 @@ class PlayerController : ZilchComponent
     [Property]
     var MovementSpeed : Real;
     [Property]
-    var JumpMultiplier : Real;
+    var JumpStrength : Real;
     [Property]
     var ClimbSpeed : Real;
     [Property]
     var DisplayBuildingDistance : Boolean;
     var DistanceFromClosestBuilding : Real = 0;
     var CanIMove : Boolean = true;
+    var Grounded : Boolean = true;
+    var Stunned : Boolean = false;
+    var OtherInRange : Boolean = false;
+    var OtherPlayer : Cog;
     
     var KeyLeft : Keys;
     var KeyRight : Keys;
     var KeyUp : Keys;
     var KeyDown : Keys;
     var KeyAttack : Keys;
+    var KeyStun : Keys;
+    var KeyJump : Keys;
+    
+    sends PlayerOneDeath : ZilchEvent;
+    sends PlayerTwoDeath : ZilchEvent;
+    sends Stun : ZilchEvent;
     
     function Initialize(init : CogInitializer)
     {
@@ -26,9 +36,43 @@ class PlayerController : ZilchComponent
         Zero.Connect(this.Owner, Events.CollisionStarted, this.OnCollisionStarted);
         Zero.Connect(this.Owner, Events.CollisionPersisted, this.OnCollisionPersisted);
         Zero.Connect(this.Owner, Events.CollisionEnded, this.OnCollisionEnded);
-        
+        Zero.Connect(this.Owner, Events.Stun, this.OnStun);
+        Zero.Connect(this.Owner, Events.Death, this.OnDeath);
         this.DefineControls();
         
+    }
+
+    function OnStun(event : ZilchEvent)
+    {
+        Console.WriteLine("Ouch, stunned by: `this.OtherPlayer.Name`");
+        
+        this.Stunned = true;
+        var seq = Action.Sequence(this.Owner.Actions);
+        Action.Delay(seq, 3.0);
+        Action.Call(seq, this.UnStun);
+        
+    }
+    
+    function UnStun()
+    {
+        Console.WriteLine("`this.Owner.Name` is unstunned");
+        this.Stunned = false;
+        
+    }
+
+    function OnDeath(event : ZilchEvent)
+    {
+        this.CanIMove = false;
+        if(this.Controller == 1)
+        {
+            var toSend = ZilchEvent();
+            this.Space.DispatchEvent(Events.PlayerOneDeath, toSend);
+        }
+        else if(this.Controller == 2)
+        {
+            var toSend = ZilchEvent();
+            this.Space.DispatchEvent(Events.PlayerTwoDeath, toSend);
+        }
     }
     
     
@@ -42,6 +86,8 @@ class PlayerController : ZilchComponent
             this.KeyUp = Keys.W;
             this.KeyDown = Keys.S;
             this.KeyAttack = Keys.E;
+            this.KeyJump = Keys.Q;
+            this.KeyStun = Keys.R;
         }
         else if(this.Controller == 2)
         {
@@ -50,6 +96,8 @@ class PlayerController : ZilchComponent
             this.KeyUp = Keys.I;
             this.KeyDown = Keys.K;
             this.KeyAttack = Keys.O;
+            this.KeyJump = Keys.U;
+            this.KeyStun = Keys.P;
         }
     }
 
@@ -67,35 +115,59 @@ class PlayerController : ZilchComponent
         //dConsole.WriteLine("`event.OtherObject.Name`");
         if(event.OtherObject.Name == "Building")
          {
-            if(this.Space.LevelSettings.GravityEffect.Active == true)
+            if(this.Owner.IgnoreSpaceEffects.IgnoreGravity != true)
             {
-                this.Space.LevelSettings.GravityEffect.Active = false;
+                this.Owner.IgnoreSpaceEffects.IgnoreGravity = true;
                 this.Owner.RigidBody.Velocity = Real3(0.0, 0.0, 0.0);
             }
          }
          
-         if(event.OtherObject.Name == "BuildingFalling")
+         if(event.OtherObject.Name == "Building" ||
+         event.OtherObject.Name == "Ground" ||
+         event.OtherObject.Name == "BuildingTop")
          {
-            if(this.Space.LevelSettings.GravityEffect.Active == true)
-            {
-                this.Space.LevelSettings.GravityEffect.Active = true;
-            }
+             
+             this.Grounded = true;
+         }
+         
+         if(this.Controller == 1 && event.OtherObject.Name == "PlayerTwo")
+         {
+             //Console.WriteLine("Withinrange");
+             this.OtherInRange = true;
+             this.OtherPlayer= event.OtherObject;
+         }
+         else if(this.Controller == 2 && event.OtherObject.Name == "PlayerOne")
+         {
+             this.OtherInRange = true;
+             this.OtherPlayer= event.OtherObject;
          }
     }
     
     function OnCollisionEnded(event : CollisionEvent)
     {
         //Console.WriteLine(this.Owner.Name);
-        if(this.Space != null && event.OtherObject.Name == "Building")
+        if(event.OtherObject.Name == "Building" && this.Owner.IgnoreSpaceEffects.IgnoreGravity == true)
          {
-            if(this.Space.LevelSettings != null && this.Space.LevelSettings.GravityEffect.Active == false)
+            if(this.Space.LevelSettings != null && this.Owner.IgnoreSpaceEffects.IgnoreGravity == true)
             {
-                this.Space.LevelSettings.GravityEffect.Active = true;
+                this.Owner.IgnoreSpaceEffects.IgnoreGravity = false;
             }
             else 
             {
                 
             }
+         }
+         
+         if(this.Controller == 1 && event.OtherObject.Name == "PlayerTwo")
+         {
+             //Console.WriteLine("OutOfrange");
+             this.OtherInRange = false;
+             this.OtherPlayer= null;
+         }
+         else if(this.Controller == 2 && event.OtherObject.Name == "PlayerOne")
+         {
+             this.OtherInRange = false;
+             this.OtherPlayer= null;
          }
     }
 
@@ -103,7 +175,6 @@ class PlayerController : ZilchComponent
 
    function OnLogicUpdate(event : UpdateEvent)
 {
-    //Console.WriteLine(this.KeyRight);
 
     if(this.DisplayBuildingDistance)
     {
@@ -111,7 +182,8 @@ class PlayerController : ZilchComponent
     }
   var movement = Real3(0.0, 0.0, 0.0);
   
-  if(this.CanIMove)
+  
+  if(this.CanIMove && this.Stunned == false)
   {
       // control left, right, and up
       if(Zero.Keyboard.KeyIsDown(this.KeyLeft))
@@ -187,9 +259,36 @@ class PlayerController : ZilchComponent
           }
       }
 
-      if(Zero.Keyboard.KeyIsPressed(Keys.Space))
+      if(Zero.Keyboard.KeyIsPressed(this.KeyJump) && this.Grounded)
       {
-          this.Owner.Transform.Translation += Real3(0.0, 100.0, 0.0) * this.JumpMultiplier * event.Dt;
+          //this.Owner.IgnoreSpaceEffects.IgnoreGravity = true;
+          if(this.NearBuilding != true)
+          {
+            this.Owner.RigidBody.Velocity += Real3(0.0, this.JumpStrength, 0.0);
+          }
+          else if(this.NearBuilding)
+          {
+              if(this.Owner.Sprite.FlipX)
+              {
+                  this.Owner.RigidBody.Velocity += Real3(5.0, this.JumpStrength, 0.0);
+              }
+              else if(!this.Owner.Sprite.FlipX)
+              {
+                  this.Owner.RigidBody.Velocity += Real3(-5.0, this.JumpStrength, 0.0);
+              }
+              
+          }
+          this.Grounded = false;
+      }
+      
+      //======================
+      //        ATTACK
+      //======================
+      
+      if(Zero.Keyboard.KeyIsPressed(this.KeyStun) && this.OtherInRange)
+      {
+          var toSend = ZilchEvent();
+          this.OtherPlayer.DispatchEvent(Events.Stun, toSend);
       }
       
   }
